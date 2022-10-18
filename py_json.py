@@ -37,8 +37,9 @@ if choice == 'Upload JSON':
     choice2=st.sidebar.selectbox("select the domain",domain_s)
     #st.subheader("please upload your file  ")
     data = st.file_uploader("Upload your file here", type=["json"])
+    st.write(data)
     if data is not None:
-        df=json_to_df(data.name,dic[str(choice2)]) 
+        df=json_to_df(f"./data/{data.name}",dic[str(choice2)]) 
         st.success("JSON Loaded successfully")
         #pn = int(st.number_input("Enter the page number: "))
         if choice1=="csv":
