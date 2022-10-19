@@ -3,7 +3,8 @@ import json
 import pyreadr 
 import xport.v56
 import pandas as pd
-
+import numpy as np
+import xmltodict
 
 
 def json_to_df(file,domain):
@@ -18,63 +19,71 @@ def json_to_df(file,domain):
     d1=data_h['clinicalData']['itemGroupData'][domain]['itemData']
     new=pd.DataFrame(d1,columns=col_list)
     new.drop("ITEMGROUPDATASEQ",axis=1,inplace=True)
+    new.replace(np.nan,"",inplace=True)
     return new
 
 
 
-
-dic={"sdtm_VS":"IG.VS","sdtm_AE":"IG.AE","sdtm_LB":"IG.LB","sdtm_DM":"IG.DM","adam_VS":"VS","adam_AE":"AE","adsl":"ADSL"}
+sdtm_li=["AE","CM","DD","DI","DM","DS","EC","EX","FA","FT","IE","LB","MH","OE","QSPH","QSSL","RELREC","RS","DE","SUPPDM","SUPPEC","SV","TA","TE","TI","TS","TV","VS"]
+adam_li=["ADAE","ADLBC","ADLBH","ADLBHY","ADQSADAS","ADQSCIBC","ADQSNPIX","ADSL","ADTTE","ADVS","ADCM","ADDD","ADDI","ADDM","ADDS","ADEC","ADEX","ADFA","ADFT","ADIE","ADLB","ADMH","ADOE","ADRS","ADDE","ADSV","ADTA","ADTE","ADTI","ADTS","ADTV"]
+# dic={"Sdtm VS":"IG.VS","Sdtm AE":"IG.AE","Sdtm LB":"IG.LB","Sdtm DM":"IG.DM","Adam VS":"ADVS","Adam AE":"ADAE","ADSL":"ADSL","supp dm":"SUPPDM"}
 
 st.title("Dataset-JSON Reader")
-
+st.sidebar.header("Dataset-JSON Reader")
 st.info("This Web Application will read a file and returns json or desired files !")
 activities = ["Upload JSON", "upload xml","upload R","upload csv","upload sas(xpt)"]
 choice = st.sidebar.selectbox("Input File Type", activities)
 
 if choice == 'Upload JSON':
-    domain_s=["sdtm_VS","sdtm_AE","sdtm_LB","sdtm_DM","adam_VS","adam_AE","adsl"]
+    domain_s=["SDTM","ADaM"]
     choice1=st.sidebar.selectbox("select the output file format",["xpt","csv","Rdata","xml"])
-    choice2=st.sidebar.selectbox("select the domain",domain_s)
-    #st.subheader("please upload your file  ")
+    choice2=st.sidebar.selectbox("select the standards",domain_s)
+    if choice2=="SDTM":
+        choice3=st.sidebar.selectbox("select the domain ",sdtm_li)
+        choice3="IG."+choice3
+    elif choice2=="ADaM":
+        choice3=st.sidebar.selectbox("select the domain",adam_li)
     data = st.file_uploader("Upload your file here", type=["json"])
-    st.write(data)
+
     if data is not None:
-        df=json_to_df(f"./data/{data.name}",dic[str(choice2)]) 
+        df=json_to_df(f"./data/{data.name}",str(choice3)) 
         st.success("JSON Loaded successfully")
-        #pn = int(st.number_input("Enter the page number: "))
-        if choice1=="csv":
-            # if choice2[0]=="s":
-            #     temp=choice2[-2:]
-            df.to_csv(choice2 +".csv")          
-            with open(choice2 +".csv") as f:
-                    st.download_button('DOWNLOAD !', f,file_name= choice2 +".csv")
-            st.write('Your json file has been exported successfully !')
+
+        if choice1=="csv":]
+            df.to_csv(choice3 +".csv") 
+            st.write(df.head())         
+            with open(choice3 +".csv",encoding='cp437') as f:
+                    st.download_button('DOWNLOAD !', f,file_name= choice3 +".csv")
+            st.write('Your csv file has been exported successfully !')
             st.write('Download your csvfile !')
         elif choice1=="Rdata":
-            rd=pyreadr.write_rds(choice2+".Rds", df)
-            with open(choice2 +".Rds") as f:
-                    st.download_button('DOWNLOAD !', f,file_name= choice2 +".Rds")
+            rd=pyreadr.write_rds(choice3+".Rds", df)
+            st.write(df.head())
+            with open(choice3 +".Rds",encoding='cp437') as f:
+                    st.download_button('DOWNLOAD !', f,file_name= choice3 +".Rds")
             st.write('Your R file has been exported successfully !')
             st.write('Download your R file !')
         elif choice1=="xml":
-            df.to_xml(choice2 +".xml")          
-            with open(choice2 +".xml") as f:
-                    st.download_button('DOWNLOAD !', f,file_name= choice2 +".xml")
+            df.to_xml(choice3 +".xml")     
+            st.write(df.head())     
+            with open(choice3 +".xml",encoding='cp437') as f:
+                    st.download_button('DOWNLOAD !', f,file_name= choice3 +".xml")
             st.write('Your xml file has been exported successfully !')
             st.write('Download your xml file !')
         elif choice1=="xpt":
             li=df.to_dict('list')
-            with open(choice2+".xpt", 'wb') as f:
+            with open(choice3+".xpt", 'wb') as f:
                 xport.from_columns(li, f)
-            with open(choice2 +".xml") as f:
-                st.download_button('DOWNLOAD !', f,file_name= choice2+".xpt")
+            st.write(df.head())
+            with open(choice3 +".xpt",encoding='cp437') as f:
+                st.download_button('DOWNLOAD !', f,file_name= choice3 +".xpt")
             st.write('Your xpt file has been exported successfully !')
             st.write('Download your xpt file !')
 
 elif choice == "upload csv":
     data =st.file_uploader("upload your file here",type=["csv"])
     if data is not None:
-        df=pd.read_csv(data)
+        df=pd.read_csv(f"./data/{data.name}")
         st.success("csv loaded successfully")
         df1=df.to_json(choice+'_csv.json',orient='records')
         st.write(df.head())
@@ -92,7 +101,7 @@ elif choice == "upload R":
         st.write(str(data.name))
         st.write(type(data))
         # with open(data.name,'r',encoding='utf-8') as f:
-        df=pyreadr.read_r(data.name)
+        df=pyreadr.read_r(f"./data/{data.name}")
         df=df[list(df.keys())[0]]
         st.success("R file loaded successfully")
         df1=df.to_json(choice+'_R.json',orient='records')
@@ -107,9 +116,9 @@ elif choice == "upload R":
 elif choice == "upload sas(xpt)":
     data =st.file_uploader("upload your file here",type=["xpt"])
     if data is not None:
-        with open (data.name,'r',encoding='utf-8') as f:
+        with open(f"./data/{data.name}",'rb') as f:
             df = xport.to_dataframe(f)
-        st.success("csv loaded successfully")
+        st.success("xpt file loaded successfully")
         df1=df.to_json(choice+'_xpt.json',orient='records')
         st.write(df.head())
         st.write(df1)
@@ -117,3 +126,17 @@ elif choice == "upload sas(xpt)":
         st.write('Download your Jsonfile !')                
         with open(choice+'_xpt.json') as f:
             st.download_button('DOWNLOAD !',f,file_name=choice+'_xpt.json')
+
+elif choice=="upload xml":
+    data=st.file_uploader("upload your file here",type=["xml"])
+    if data is not None:
+        with open(f"./data/{data.name}") as xml_file:
+            data_dict = xmltodict.parse(xml_file.read())
+        st.success("xml file loaded successfully")
+        json_data = json.dumps(data_dict)
+        with open(choice+"_xml.json", "w") as json_file:
+            json_file.write(json_data)
+        with open (choice+"_xml.json",'r') as f:
+            st.download_button('DOWNLOAD !',f,file_name=choice+'_xml.json')
+        
+        
