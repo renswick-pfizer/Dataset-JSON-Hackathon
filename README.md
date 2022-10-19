@@ -42,8 +42,9 @@ pip install xmltodict
 ## Documentation
 
 After installing the packages You need to pull all the data from this repository to run the 
-py_json.py file and data folder as the json and xml data 
-you can open the python file in vs code and run the file by typing 
+py_json.py file and data folder as the json and xml data. If you have any new datasets you can place the file into data folder.
+
+you can open the python file in vs code and execute the file by giveing this command
 "streamlit run py_json.py".
 
 
